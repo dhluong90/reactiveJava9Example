@@ -1,3 +1,4 @@
+import javax.swing.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -28,14 +29,6 @@ public class StockPricePublisher implements Publisher<Double> {
 		subscriptions.add(subscription);
 
 		subscriber.onSubscribe(subscription);
-	}
-
-	public void waitUntilTerminated() throws InterruptedException {
-		try {
-			terminated.get();
-		} catch (ExecutionException e) {
-			System.out.println(e);
-		}
 	}
 
 	private class MySubscription implements Subscription {
@@ -78,8 +71,16 @@ public class StockPricePublisher implements Publisher<Double> {
 			for (int i = 0; i < n; i++) {
 
 				executor.execute(() -> {
-					LogService.log("on next...");
-					subscriber.onNext(StockPriceService.getInstance().fetchStockPrice());
+					Double value = StockPriceService.getInstance().fetchStockPrice();
+					SwingUtilities.invokeLater(new Runnable() {
+						public void run() {
+							// Here, we can safely update the GUI
+							// because we'll be called from the
+							// event dispatch thread
+							subscriber.onNext(value);
+						}
+					});
+
 				});
 			}
 		}
